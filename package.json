@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/RaymondLiu777/timeninja-web-game#readme",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "socket.io": "^4.6.2"
   }
 }
