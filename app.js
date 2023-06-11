@@ -10,8 +10,8 @@ app.use(express.static('public'));
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
-let port = 3000;
-httpServer.listen(port);
+const PORT = process.env.PORT || 3000
+httpServer.listen(PORT);
 console.log(`Server listening on port ${port}`)
 
 game.startServer(io);
