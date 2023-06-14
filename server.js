@@ -21,9 +21,9 @@ exports.createConnection = function(socket){
         game: null
     };
 
-    socket.on("CreateGame", (gameId) => {
-        if(Game.createGame(io, games, gameId)) {
-            games[gameId].addPlayer(players[socket.id]);
+    socket.on("CreateGame", (args) => {
+        if(Game.createGame(io, games, args.id, args.bot)) {
+            games[args.id].addPlayer(players[socket.id]);
         }
     })
 

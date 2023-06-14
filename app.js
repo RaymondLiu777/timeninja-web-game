@@ -1,7 +1,6 @@
 const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const path = require('path');
 const game = require('./server');
 
 const app = express();

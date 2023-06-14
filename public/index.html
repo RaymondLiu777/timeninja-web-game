@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing</title>
+    <title>Time Ninja Game</title>
 </head>
 <body>
-    
-    <canvas id="game" width="480" height="480" ></canvas>
+    <canvas id="game" width="352" height="352" ></canvas>
     <div id="form2">
         <label for="gameId">Game ID:</label>
         <input type="text" id="gameId" name="gameId">
         <br>
         <button id = "create-game-btn" type="button">Create Game</button>
         <button id = "join-game-btn" type="button">Join Game</button>
+        <button id = "bot-game-btn" type="button">Bot Game</button>
+    </div>
+    <div>
+        <span>Your next move: </span>
+        <span id="input"></span>
     </div>
     <div id="form2">
         <label for="next-move">Next Move:</label>

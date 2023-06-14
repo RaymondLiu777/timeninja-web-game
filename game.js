@@ -1,4 +1,5 @@
 const fs = require('fs');
+const Map = require("./map")
 
 const GameStates = {
     Unstarted: "Unstarted",
@@ -13,43 +14,33 @@ const directions_offsets = {
     Right: [0, 1],
 };
 
-const fileContent = fs.readFileSync("stage1.txt", 'utf-8');
-const lines = fileContent.trim().split('\n');
-const stage1Map = lines.map(line => line.trim().split(' ').map(Number).map((num) => {
-    if(num === 0) {
-        return {
-            type: "Block",
-            object: null
-        }
-    }
-    if(num === 1) {
-        return {
-            type: "Empty",
-            object: null
-        }
-    }
-}));
+const fileContent = fs.readFileSync("teststage.txt", 'utf-8');
+const testMap = new Map(fileContent);
 
 class Game {
 
-    constructor(io, gameId) {
+    constructor(io, gameId, bot) {
         this.io = io;
         this.gameId = gameId;
         this.player1 = null;
         this.player2 = null;
         this.gameState = GameStates.Unstarted;
         this.game = null;
+        this.botGame = bot;
+        if(bot) {
+            this.player2 = {id: bot};
+        }
     }
 
     /**
      * Initialize Game Object
      */
-    static createGame(io, games, gameId) {
+    static createGame(io, games, gameId, bot) {
         if(gameId in games) {
             console.log("Game ", gameId, " already created");
             return false;
         }
-        games[gameId] = new Game(io, gameId);
+        games[gameId] = new Game(io, gameId, bot);
         console.log("Created Game: ", gameId);
         return true;
     }
@@ -65,6 +56,9 @@ class Game {
             player.game = this.gameId;
             this.player1 = player;
             console.log("Add Player: ", player.id, " to Game: ", this.gameId);
+            if(this.botGame) {
+                this.startGame();
+            }
         }
         else if(this.player2 === null) {
             player.game = this.gameId;
@@ -101,17 +95,32 @@ class Game {
 
     startGame() {
         this.player1.socket.join(this.gameId);
-        this.player2.socket.join(this.gameId);
+        if(!this.botGame) {
+            this.player2.socket.join(this.gameId);
+        }
         this.gameState = GameStates.InProgress;
         console.log("Starting Game: ", this.gameId);
         this.game = {
             players: [{
-                location: [0, 7]
+                location: [1, 5]
             },
             {
-                location: [14, 7]
+                location: [9, 5]
             }],
             ninjaStars: []
+        }
+        //Send game start information
+        this.player1.socket.emit("GameStart", {
+            id: "teststage",
+            map: testMap.map,
+            player: 0
+        });
+        if(!this.botGame) {
+            this.player2.socket.emit("GameStart", {
+                id: "teststage",
+                map: testMap.map,
+                player: 1
+            });
         }
         this.boardCastGameState();
     }
@@ -136,6 +145,9 @@ class Game {
             console.log("Player: ", playerId, " attempted move in game: ", this.gameId);
             return;
         }
+        if(this.botGame) {
+            this.AiMove();
+        }
         if(this.game.players[0].ready == true && this.game.players[1].ready == true) {
             this.updateGame();
         }
@@ -157,9 +169,9 @@ class Game {
             //Move Player (Check is square is empty)
             if(intent === "Up" || intent == "Down" || intent == "Right" || intent == "Left") {
                 let offset = directions_offsets[intent];
-                let [rowIndex, colIndex] = player.location.map((a, i) => a + offset[i]);
-                if(stage1Map[rowIndex][colIndex].type == "Empty") {
-                    player.location = [rowIndex, colIndex];
+                let nextLoc = player.location.map((a, i) => a + offset[i]);
+                if(testMap.isWalkable(nextLoc)) {
+                    player.location = nextLoc;
                 }
             }
             //Player throws ninjastar
@@ -176,9 +188,9 @@ class Game {
         //Update NinjaStars
         this.game.ninjaStars.forEach((ninjaStar, idx) => {
             //Move ninjastar
-            let [rowIndex, colIndex] = ninjaStar.location.map((a, i) => a + ninjaStar.direction[i]);
-            if(stage1Map[rowIndex][colIndex].type == "Empty") {
-                ninjaStar.location = [rowIndex, colIndex];
+            let nextLoc = ninjaStar.location.map((a, i) => a + ninjaStar.direction[i]);
+            if(testMap.isWalkable(nextLoc)) {
+                ninjaStar.location = nextLoc;
                 //Check for collision with player
                 this.game.players.forEach((player) => {
                     if(player.location[0] === ninjaStar.location[0] && player.location[1] === ninjaStar.location[1]){
@@ -195,6 +207,14 @@ class Game {
             return !ninjaStar.remove;
         })
         this.boardCastGameState();
+    }
+
+    /**
+     * Pick a move for the bot
+     */
+    AiMove() {
+        this.game.players[1].intent = "Wait";
+        this.game.players[1].ready = true;
     }
 
     boardCastGameState() {
