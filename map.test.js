@@ -1,5 +1,9 @@
 const Map = require("./map");
 
+const eqSet = (xs, ys) =>
+    xs.size === ys.size &&
+    [...xs].every((x) => ys.has(x));
+
 test("Straight Map Vision Test", () => {
     const mapstring = 
     "2 2 2 2 2 2 2\n" +
@@ -12,10 +16,9 @@ test("Straight Map Vision Test", () => {
     const expected_tiles = [[1,3], [2,3], [3,3], [4,3], [5,3], [3,1], [3,2], [3,4], [3,5]];
     testMap = new Map(mapstring);
     visionTiles = testMap.getVisionFrom([3, 3]);
-    expect(visionTiles.length).toBe(expected_tiles.length);
-    const expected = expected_tiles.map(row => row.join(',')).sort().join(' ');
-    const actual = visionTiles.map(row => row.join(',')).sort().join(' ');
-    expect(actual).toBe(expected);
+    expect(visionTiles.size).toBe(expected_tiles.length);
+    const expected = new Set(expected_tiles.map(row => JSON.stringify(row)));
+    expect(eqSet(visionTiles, expected)).toBe(true);
 })
 
 test("Diagonal Map Vision Test", () => {
@@ -36,8 +39,7 @@ test("Diagonal Map Vision Test", () => {
     ];
     testMap = new Map(mapstring);
     visionTiles = testMap.getVisionFrom([3, 3]);
-    expect(visionTiles.length).toBe(expected_tiles.length);
-    const expected = expected_tiles.map(row => row.join(',')).sort().join(' ');
-    const actual = visionTiles.map(row => row.join(',')).sort().join(' ');
-    expect(actual).toBe(expected);
+    expect(visionTiles.size).toBe(expected_tiles.length);
+    const expected = new Set(expected_tiles.map(row => JSON.stringify(row)));
+    expect(eqSet(visionTiles, expected)).toBe(true);
 })

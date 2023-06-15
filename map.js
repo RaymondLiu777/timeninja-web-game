@@ -40,7 +40,6 @@ class Map {
     }
 
     getVisionFrom(start) {
-        let visibleTiles = [];
         let visibleTileSet = new Set();
         let queue = [start];
         const offsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
@@ -92,7 +91,6 @@ class Map {
             }
             //Add to queue + set
             if(visible) {
-                visibleTiles.push(tile);
                 visibleTileSet.add(JSON.stringify(tile));
                 //Add surrounding tiles
                 offsets.forEach((direction) => {
@@ -101,7 +99,7 @@ class Map {
                 })
             }
         }
-        return visibleTiles;
+        return visibleTileSet;
     }
 }
 

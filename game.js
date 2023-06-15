@@ -17,6 +17,9 @@ const directions_offsets = {
 const fileContent = fs.readFileSync("teststage.txt", 'utf-8');
 const testMap = new Map(fileContent);
 
+const MAX_TIME_STEP = 15;
+const MAX_TIME_LOOP = 3;
+
 class Game {
 
     constructor(io, gameId, bot) {
@@ -93,6 +96,18 @@ class Game {
         this.endGame();
     }
 
+    initialGameState() {
+        return {
+            players: [{
+                location: [1, 5]
+            },
+            {
+                location: [9, 5]
+            }],
+            ninjaStars: [],
+        };
+    }
+
     startGame() {
         this.player1.socket.join(this.gameId);
         if(!this.botGame) {
@@ -101,13 +116,7 @@ class Game {
         this.gameState = GameStates.InProgress;
         console.log("Starting Game: ", this.gameId);
         this.game = {
-            players: [{
-                location: [1, 5]
-            },
-            {
-                location: [9, 5]
-            }],
-            ninjaStars: []
+            gameState: this.initialGameState(),
         }
         //Send game start information
         this.player1.socket.emit("GameStart", {
@@ -134,12 +143,12 @@ class Game {
             return;
         }
         if(this.player1.id == playerId) {
-            this.game.players[0].intent = move;
-            this.game.players[0].ready = true;
+            this.game.gameState.players[0].intent = move;
+            this.game.gameState.players[0].ready = true;
         }
         else if(this.player2.id == playerId) {
-            this.game.players[1].intent = move;
-            this.game.players[1].ready = true;
+            this.game.gameState.players[1].intent = move;
+            this.game.gameState.players[1].ready = true;
         }
        else if(player === null) {
             console.log("Player: ", playerId, " attempted move in game: ", this.gameId);
@@ -148,7 +157,7 @@ class Game {
         if(this.botGame) {
             this.AiMove();
         }
-        if(this.game.players[0].ready == true && this.game.players[1].ready == true) {
+        if(this.game.gameState.players[0].ready == true && this.game.gameState.players[1].ready == true) {
             this.updateGame();
         }
     }
@@ -164,7 +173,7 @@ class Game {
             return;
         }
         //Update Players
-        this.game.players.forEach((player) => {
+        this.game.gameState.players.forEach((player) => {
             let intent = player.intent;
             //Move Player (Check is square is empty)
             if(intent === "Up" || intent == "Down" || intent == "Right" || intent == "Left") {
@@ -177,7 +186,7 @@ class Game {
             //Player throws ninjastar
             if(intent === "StarUp" || intent == "StarDown" || intent == "StarRight" || intent == "StarLeft") {
                 let offset = directions_offsets[intent.substring(4)];
-                this.game.ninjaStars.push({
+                this.game.gameState.ninjaStars.push({
                     location: [player.location[0], player.location[1]],
                     direction: offset,
                     remove: false
@@ -186,13 +195,13 @@ class Game {
             player.ready = false;
         })
         //Update NinjaStars
-        this.game.ninjaStars.forEach((ninjaStar, idx) => {
+        this.game.gameState.ninjaStars.forEach((ninjaStar, idx) => {
             //Move ninjastar
             let nextLoc = ninjaStar.location.map((a, i) => a + ninjaStar.direction[i]);
             if(testMap.isWalkable(nextLoc)) {
                 ninjaStar.location = nextLoc;
                 //Check for collision with player
-                this.game.players.forEach((player) => {
+                this.game.gameState.players.forEach((player) => {
                     if(player.location[0] === ninjaStar.location[0] && player.location[1] === ninjaStar.location[1]){
                         this.endGame();
                     }
@@ -203,7 +212,7 @@ class Game {
             }
         })
         //Remove ninjaStars
-        this.game.ninjaStars = this.game.ninjaStars.filter((ninjaStar) => {
+        this.game.gameState.ninjaStars = this.game.gameState.ninjaStars.filter((ninjaStar) => {
             return !ninjaStar.remove;
         })
         this.boardCastGameState();
@@ -213,23 +222,53 @@ class Game {
      * Pick a move for the bot
      */
     AiMove() {
-        this.game.players[1].intent = "Wait";
-        this.game.players[1].ready = true;
+        this.game.gameState.players[1].intent = "Wait";
+        this.game.gameState.players[1].ready = true;
     }
 
     boardCastGameState() {
-        let gameState = {
-            players: [
-                this.game.players[0].location,
-                this.game.players[1].location
-            ],
-            ninjaStars: this.game.ninjaStars.map((ninjaStar) => {
+        let player1Location = this.game.gameState.players[0].location;
+        let player2Location = this.game.gameState.players[1].location;
+        //Player 1
+        let visionTiles1 = testMap.getVisionFrom(player1Location);
+        let player1GameState = {
+            player: player1Location,
+            enemies: [],
+            ninjaStars: this.game.gameState.ninjaStars.filter((ninjaStar) => {
+                return visionTiles1.has(JSON.stringify(ninjaStar.location));
+            })
+            .map((ninjaStar) => {
                 return {
                     location: ninjaStar.location
                 };
-            })
+            }),
+            vision: [...visionTiles1],
         };
-        this.io.to(this.gameId).emit("GameUpdate", gameState);
+        if(visionTiles1.has(JSON.stringify(player2Location))) {
+            player1GameState.enemies.push(player2Location)
+        }
+        this.player1.socket.emit("GameUpdate", player1GameState)
+        //Player 2
+        let visionTiles2 = testMap.getVisionFrom(player2Location);
+        let player2GameState = {
+            player: player2Location,
+            enemies: [],
+            ninjaStars: this.game.gameState.ninjaStars.filter((ninjaStar) => {
+                return visionTiles2.has(JSON.stringify(ninjaStar.location));
+            })
+            .map((ninjaStar) => {
+                return {
+                    location: ninjaStar.location
+                };
+            }),
+            vision: [...visionTiles2],
+        };
+        if(visionTiles2.has(JSON.stringify(player1Location))) {
+            player2GameState.enemies.push(player1Location)
+        }
+        if(!this.botGame) {
+            this.player2.socket.emit("GameUpdate", player2GameState)
+        }
     }
 
     /**
