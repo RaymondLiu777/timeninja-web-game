@@ -97,7 +97,7 @@ class Game {
     }
 
     initialGameState() {
-        return {
+        return JSON.parse(JSON.stringify({
             players: [{
                 location: [1, 5]
             },
@@ -105,7 +105,7 @@ class Game {
                 location: [9, 5]
             }],
             ninjaStars: [],
-        };
+        }));
     }
 
     startGame() {
@@ -117,6 +117,9 @@ class Game {
         console.log("Starting Game: ", this.gameId);
         this.game = {
             gameState: this.initialGameState(),
+            timestep: 0,
+            timeloop: 0,
+            timeline: [[],[],[]],
         }
         //Send game start information
         this.player1.socket.emit("GameStart", {
@@ -247,9 +250,14 @@ class Game {
         let player1Location = this.game.gameState.players[0].location;
         let player2Location = this.game.gameState.players[1].location;
         //Player 1
-        let visionTiles1 = testMap.getVisionFrom(player1Location);
+        let pastLocations1 = [];
+        for(let i = 0; i < this.game.timeloop; i++) {
+            pastLocations1.push(this.game.timeline[i][this.game.timestep].players[0].location);
+        }
+        let visionTiles1 = testMap.getVisionFromMultiple([player1Location, ...pastLocations1]);
         let player1GameState = {
             player: player1Location,
+            pastSelf: pastLocations1,
             enemies: [],
             ninjaStars: this.game.gameState.ninjaStars.filter((ninjaStar) => {
                 return visionTiles1.has(JSON.stringify(ninjaStar.location));

@@ -4,7 +4,7 @@ var stageMap;
 var player;
 
 // Load Drawings
-var image_list = ["stage1", "teststage", "novision", "player1", "player2", "ninjastar"];
+var image_list = ["stage1", "teststage", "novision", "player1", "player1old", "player2", "ninjastar"];
 var images = {};
 image_list.forEach((img_name)=> {
     let image_item = new Image();
@@ -25,6 +25,10 @@ socket.on("GameUpdate", (gameState) => {
     context.drawImage(images[mapName], 0, 0);
     // Draw you
     context.drawImage(images["player1"], gameState.player[1] * 32, gameState.player[0] * 32);
+    // Draw past you
+    gameState.pastSelf.forEach((pastLocation) => {
+        context.drawImage(images["player1old"], pastLocation[1] * 32, pastLocation[0] * 32);
+    })
     //Draw enemies
     gameState.enemies.forEach((enemy) => {
         context.drawImage(images["player2"], enemy[1] * 32, enemy[0] * 32);

@@ -101,6 +101,14 @@ class Map {
         }
         return visibleTileSet;
     }
+
+    getVisionFromMultiple(locations) {
+        let totalVision = new Set();
+        locations.forEach((location) => {
+            totalVision = new Set([...this.getVisionFrom(location), ...totalVision]);
+        })
+        return totalVision;
+    }
 }
 
 module.exports = Map;
