@@ -23,16 +23,16 @@ socket.on("GameUpdate", (gameState) => {
     console.log(gameState);
     // Draw Map
     context.drawImage(images[mapName], 0, 0);
-    // Draw you
-    context.drawImage(images["player1"], gameState.player[1] * 32, gameState.player[0] * 32);
-    // Draw past you
-    gameState.pastSelf.forEach((pastLocation) => {
-        context.drawImage(images["player1old"], pastLocation[1] * 32, pastLocation[0] * 32);
-    })
     //Draw enemies
     gameState.enemies.forEach((enemy) => {
         context.drawImage(images["player2"], enemy[1] * 32, enemy[0] * 32);
     })
+    // Draw past you
+    gameState.pastSelf.forEach((pastLocation) => {
+        context.drawImage(images["player1old"], pastLocation[1] * 32, pastLocation[0] * 32);
+    })
+    // Draw you
+    context.drawImage(images["player1"], gameState.player[1] * 32, gameState.player[0] * 32);
     // Draw NinjaStars
     gameState.ninjaStars.forEach((ninjaStar) => {
         context.drawImage(images["ninjastar"], ninjaStar.location[1] * 32, ninjaStar.location[0] * 32);

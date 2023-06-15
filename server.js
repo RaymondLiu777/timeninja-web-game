@@ -48,6 +48,5 @@ exports.createConnection = function(socket){
             games[gameId].removePlayer(socket.id);
         }
         delete players[socket.id];
-        console.log(games);
     })
 }

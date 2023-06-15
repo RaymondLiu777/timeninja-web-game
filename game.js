@@ -1,7 +1,7 @@
 const fs = require('fs');
 const Map = require("./map")
 
-const GameStates = {
+const GameStatus = {
     Unstarted: "Unstarted",
 	InProgress: "InProgress",
 	Finished: "Finished"
@@ -27,7 +27,7 @@ class Game {
         this.gameId = gameId;
         this.player1 = null;
         this.player2 = null;
-        this.gameState = GameStates.Unstarted;
+        this.gameStatus = GameStatus.Unstarted;
         this.game = null;
         this.botGame = bot;
         if(bot) {
@@ -113,7 +113,7 @@ class Game {
         if(!this.botGame) {
             this.player2.socket.join(this.gameId);
         }
-        this.gameState = GameStates.InProgress;
+        this.gameStatus = GameStatus.InProgress;
         console.log("Starting Game: ", this.gameId);
         this.game = {
             gameState: this.initialGameState(),
@@ -142,7 +142,7 @@ class Game {
      */
     playerInput(playerId, move) {
         console.log("Player: ", playerId, " made move: ", move)
-        if(this.gameState !== GameStates.InProgress) {
+        if(this.gameStatus !== GameStatus.InProgress) {
             return;
         }
         if(this.player1.id == playerId) {
@@ -172,7 +172,7 @@ class Game {
      */
     updateGame() {
         console.log("Update Game");
-        if(this.gameState !== GameStates.InProgress) {
+        if(this.gameStatus !== GameStatus.InProgress) {
             return;
         }
         //Make a copy of game state
@@ -247,13 +247,13 @@ class Game {
     }
 
     boardCastGameState() {
-        let player1Location = this.game.gameState.players[0].location;
-        let player2Location = this.game.gameState.players[1].location;
+        let currentGameState = this.getCurrentGameState();
+        let player1Location = currentGameState.players[0].location;
+        let player2Location = currentGameState.players[1].location;
+        let pastLocations1 = currentGameState.pastPlayers[0];
+        let pastLocations2 = currentGameState.pastPlayers[1];
+
         //Player 1
-        let pastLocations1 = [];
-        for(let i = 0; i < this.game.timeloop; i++) {
-            pastLocations1.push(this.game.timeline[i][this.game.timestep].players[0].location);
-        }
         let visionTiles1 = testMap.getVisionFromMultiple([player1Location, ...pastLocations1]);
         let player1GameState = {
             player: player1Location,
@@ -269,14 +269,17 @@ class Game {
             }),
             vision: [...visionTiles1],
         };
-        if(visionTiles1.has(JSON.stringify(player2Location))) {
-            player1GameState.enemies.push(player2Location)
-        }
+        [player2Location, ...pastLocations2].forEach((playerLocation) => {
+            if(visionTiles1.has(JSON.stringify(playerLocation))) {
+                player1GameState.enemies.push(playerLocation)
+            }
+        })
         this.player1.socket.emit("GameUpdate", player1GameState)
         //Player 2
-        let visionTiles2 = testMap.getVisionFrom(player2Location);
+        let visionTiles2 = testMap.getVisionFromMultiple([player2Location, ...pastLocations2]);
         let player2GameState = {
             player: player2Location,
+            pastSelf: pastLocations2,
             enemies: [],
             ninjaStars: this.game.gameState.ninjaStars.filter((ninjaStar) => {
                 return visionTiles2.has(JSON.stringify(ninjaStar.location));
@@ -288,12 +291,25 @@ class Game {
             }),
             vision: [...visionTiles2],
         };
-        if(visionTiles2.has(JSON.stringify(player1Location))) {
-            player2GameState.enemies.push(player1Location)
-        }
+        [player1Location, ...pastLocations1].forEach((playerLocation) => {
+            if(visionTiles2.has(JSON.stringify(playerLocation))) {
+                player2GameState.enemies.push(playerLocation)
+            }
+        })
         if(!this.botGame) {
             this.player2.socket.emit("GameUpdate", player2GameState)
         }
+    }
+
+    getCurrentGameState() {
+        let initialState = JSON.parse(JSON.stringify(this.game.gameState));
+        initialState.pastPlayers= [[], []];
+        for(let i = 0; i < this.game.timeloop; i++) {
+            initialState.pastPlayers[0].push(this.game.timeline[i][this.game.timestep].players[0].location);
+            initialState.pastPlayers[1].push(this.game.timeline[i][this.game.timestep].players[1].location);
+            initialState.ninjaStars.push(...this.game.timeline[i][this.game.timestep].ninjaStars)
+        }
+        return initialState;
     }
 
     /**
@@ -301,7 +317,7 @@ class Game {
      */
     endGame() {
         console.log("Ending Game: ", this.gameId);
-        this.gameState = GameStates.Finished;
+        this.gameStatus = GameStatus.Finished;
     }
 }
 
