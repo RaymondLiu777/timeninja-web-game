@@ -51,7 +51,8 @@ let buttonActionMap ={
     "KeyS": "StarDown",
     "KeyW": "StarUp",
     "KeyD": "StarRight",
-    "KeyA": "StarLeft"
+    "KeyA": "StarLeft",
+    "Space": "Wait"
 }
 
 function processButton(code) {

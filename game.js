@@ -172,9 +172,26 @@ class Game {
         if(this.gameState !== GameStates.InProgress) {
             return;
         }
+        //Make a copy of game state
+        this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
+        //Update time and deal with time loops
+        this.game.timestep += 1;
+        if(this.game.timestep == MAX_TIME_STEP) {
+            this.game.timestep = 0;
+            this.game.timeloop += 1;
+            this.game.gameState = this.initialGameState();
+        }
+        if(this.game.timeloop === MAX_TIME_LOOP) {
+            this.endGame();
+            return;
+        }
+
         //Update Players
         this.game.gameState.players.forEach((player) => {
             let intent = player.intent;
+            if(intent === "Wait") {
+                return;
+            }
             //Move Player (Check is square is empty)
             if(intent === "Up" || intent == "Down" || intent == "Right" || intent == "Left") {
                 let offset = directions_offsets[intent];
