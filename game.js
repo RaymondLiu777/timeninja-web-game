@@ -270,11 +270,6 @@ class Game {
             enemies: [],
             ninjaStars: currentGameState.ninjaStars.filter((ninjaStar) => {
                 return visionTiles1.has(JSON.stringify(ninjaStar.location));
-            })
-            .map((ninjaStar) => {
-                return {
-                    location: ninjaStar.location
-                };
             }),
             vision: [...visionTiles1],
         };

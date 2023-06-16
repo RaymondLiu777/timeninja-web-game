@@ -49,7 +49,7 @@ let tempTimestep;
 let timeline = [];
 
 // Load Drawings
-var image_list = ["stage1", "teststage", "novision", "player1", "player1old", "player2", "ninjastar"];
+var image_list = ["stage1", "teststage", "novision", "player1", "player1old", "player2", "ninjastar", "ninjastar-down", "ninjastar-up", "ninjastar-right", "ninjastar-left"];
 var images = {};
 image_list.forEach((img_name)=> {
     let image_item = new Image();
@@ -120,7 +120,23 @@ function drawBoard(gameState, hideVision) {
     context.drawImage(images["player1"], gameState.player[1] * 32, gameState.player[0] * 32);
     // Draw NinjaStars
     gameState.ninjaStars.forEach((ninjaStar) => {
-        context.drawImage(images["ninjastar"], ninjaStar.location[1] * 32, ninjaStar.location[0] * 32);
+        console.log(ninjaStar.direction);
+        let image = "";
+        if(ninjaStar.direction[0] === -1 && ninjaStar.direction[1] === 0) {
+            image = "ninjastar-up";
+        }
+        if(ninjaStar.direction[0] === 1 && ninjaStar.direction[1] === 0) {
+            image = "ninjastar-down";
+        }
+        if(ninjaStar.direction[0] === 0 && ninjaStar.direction[1] === -1) {
+            image = "ninjastar-left";
+        }
+        if(ninjaStar.direction[0] === 0 && ninjaStar.direction[1] === 1) {
+            console.log(ninjaStar.direction);
+            image = "ninjastar-right";
+        }
+        console.log(image);
+        context.drawImage(images[image], ninjaStar.location[1] * 32, ninjaStar.location[0] * 32);
     })
     //Hide vision
     if(hideVision) {
