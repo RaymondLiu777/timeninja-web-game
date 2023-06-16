@@ -8,7 +8,7 @@ class Map {
                 return {
                     name: "Hole",
                     walkable: false,
-                    vision: true
+                    vision: false
                 }
             }
             if(num === 1) {

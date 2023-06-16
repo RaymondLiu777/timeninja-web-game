@@ -17,7 +17,7 @@ const directions_offsets = {
 const fileContent = fs.readFileSync("teststage.txt", 'utf-8');
 const testMap = new Map(fileContent);
 
-const MAX_TIME_STEP = 15;
+const MAX_TIME_STEP = 20;
 const MAX_TIME_LOOP = 3;
 
 class Game {
@@ -171,7 +171,6 @@ class Game {
      * Game Logic
      */
     updateGame() {
-        console.log("Update Game");
         if(this.gameStatus !== GameStatus.InProgress) {
             return;
         }
@@ -192,7 +191,7 @@ class Game {
         //Update Players
         this.game.gameState.players.forEach((player) => {
             let intent = player.intent;
-            if(intent === "Wait") {
+            if(intent === "Stop") {
                 return;
             }
             //Move Player (Check is square is empty)
@@ -220,12 +219,6 @@ class Game {
             let nextLoc = ninjaStar.location.map((a, i) => a + ninjaStar.direction[i]);
             if(testMap.isWalkable(nextLoc)) {
                 ninjaStar.location = nextLoc;
-                //Check for collision with player
-                this.game.gameState.players.forEach((player) => {
-                    if(player.location[0] === ninjaStar.location[0] && player.location[1] === ninjaStar.location[1]){
-                        this.endGame();
-                    }
-                })
             }
             else {
                 ninjaStar.remove = true;
@@ -235,6 +228,20 @@ class Game {
         this.game.gameState.ninjaStars = this.game.gameState.ninjaStars.filter((ninjaStar) => {
             return !ninjaStar.remove;
         })
+        let currentGameState = this.getCurrentGameState();
+        //Check for collision with player
+        currentGameState.ninjaStars.forEach((ninjaStar) => {
+            [currentGameState.players[0].location, ...currentGameState.pastPlayers[0]].forEach((player) => {
+                if(ninjaStar.location[0] === player[0] && ninjaStar.location[1] === player[1]) {
+                    this.endGame(1);
+                }
+            });
+            [currentGameState.players[1].location, ...currentGameState.pastPlayers[1]].forEach((player) => {
+                if(ninjaStar.location[0] === player[0] && ninjaStar.location[1] === player[1]) {
+                    this.endGame(0);
+                }
+            });
+        });
         this.boardCastGameState();
     }
 
@@ -256,10 +263,12 @@ class Game {
         //Player 1
         let visionTiles1 = testMap.getVisionFromMultiple([player1Location, ...pastLocations1]);
         let player1GameState = {
+            timestep: this.game.timestep,
+            timeloop: this.game.timeloop,
             player: player1Location,
             pastSelf: pastLocations1,
             enemies: [],
-            ninjaStars: this.game.gameState.ninjaStars.filter((ninjaStar) => {
+            ninjaStars: currentGameState.ninjaStars.filter((ninjaStar) => {
                 return visionTiles1.has(JSON.stringify(ninjaStar.location));
             })
             .map((ninjaStar) => {
@@ -278,10 +287,12 @@ class Game {
         //Player 2
         let visionTiles2 = testMap.getVisionFromMultiple([player2Location, ...pastLocations2]);
         let player2GameState = {
+            timestep: this.game.timestep,
+            timeloop: this.game.timeloop,
             player: player2Location,
             pastSelf: pastLocations2,
             enemies: [],
-            ninjaStars: this.game.gameState.ninjaStars.filter((ninjaStar) => {
+            ninjaStars: currentGameState.ninjaStars.filter((ninjaStar) => {
                 return visionTiles2.has(JSON.stringify(ninjaStar.location));
             })
             .map((ninjaStar) => {
@@ -314,9 +325,19 @@ class Game {
 
     /**
      * End Game
+     * result 0=player1 wins, 1=player2 wins, -1=tie
      */
-    endGame() {
+    endGame(result) {
         console.log("Ending Game: ", this.gameId);
+        if(result === 0) {
+            console.log("Player1 Wins");
+        }
+        if(result === 1) {
+            console.log("Player2 Wins");
+        }
+        if(result === -1) {
+            console.log("Tie");
+        }
         this.gameStatus = GameStatus.Finished;
     }
 }
