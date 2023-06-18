@@ -54,6 +54,7 @@ class Game {
     addPlayer(player) {
         if(player.game !== null) {
             console.log("Player: ", player.id, " is already in a game");
+            return;
         }
         if(this.player1 === null) {
             player.game = this.gameId;
@@ -93,7 +94,6 @@ class Game {
         else {
             console.log("Player: ", playerId, " tried to leave game: ", this.gameId);
         }
-        this.endGame();
     }
 
     initialGameState() {
@@ -125,13 +125,17 @@ class Game {
         this.player1.socket.emit("GameStart", {
             id: "teststage",
             map: testMap.map,
-            player: 0
+            player: 0,
+            maxTimestep: MAX_TIME_STEP,
+            maxTimeloop: MAX_TIME_LOOP,
         });
         if(!this.botGame) {
             this.player2.socket.emit("GameStart", {
                 id: "teststage",
                 map: testMap.map,
-                player: 1
+                player: 1,
+                maxTimestep: MAX_TIME_STEP,
+                maxTimeloop: MAX_TIME_LOOP,
             });
         }
         this.boardCastGameState();
@@ -141,7 +145,7 @@ class Game {
      * Handle Player Input
      */
     playerInput(playerId, move) {
-        console.log("Player: ", playerId, " made move: ", move)
+        // console.log("Player: ", playerId, " made move: ", move)
         if(this.gameStatus !== GameStatus.InProgress) {
             return;
         }
@@ -184,7 +188,7 @@ class Game {
             this.game.gameState = this.initialGameState();
         }
         if(this.game.timeloop === MAX_TIME_LOOP) {
-            this.endGame();
+            this.endGame(-1);
             return;
         }
 
@@ -230,19 +234,29 @@ class Game {
         })
         let currentGameState = this.getCurrentGameState();
         //Check for collision with player
+        let winner = [false, false]
         currentGameState.ninjaStars.forEach((ninjaStar) => {
             [currentGameState.players[0].location, ...currentGameState.pastPlayers[0]].forEach((player) => {
                 if(ninjaStar.location[0] === player[0] && ninjaStar.location[1] === player[1]) {
-                    this.endGame(1);
+                    winner[1] = true;
                 }
             });
             [currentGameState.players[1].location, ...currentGameState.pastPlayers[1]].forEach((player) => {
                 if(ninjaStar.location[0] === player[0] && ninjaStar.location[1] === player[1]) {
-                    this.endGame(0);
+                    winner[0] = true;
                 }
             });
         });
         this.boardCastGameState();
+        if(winner[0] && winner[1]) {
+            this.endGame(-1);
+        }
+        else if(winner[0]) {
+            this.endGame(0);
+        }
+        else if(winner[1]) {
+            this.endGame(1);
+        }
     }
 
     /**
@@ -289,11 +303,6 @@ class Game {
             enemies: [],
             ninjaStars: currentGameState.ninjaStars.filter((ninjaStar) => {
                 return visionTiles2.has(JSON.stringify(ninjaStar.location));
-            })
-            .map((ninjaStar) => {
-                return {
-                    location: ninjaStar.location
-                };
             }),
             vision: [...visionTiles2],
         };
@@ -323,17 +332,40 @@ class Game {
      * result 0=player1 wins, 1=player2 wins, -1=tie
      */
     endGame(result) {
-        console.log("Ending Game: ", this.gameId);
-        if(result === 0) {
-            console.log("Player1 Wins");
-        }
-        if(result === 1) {
-            console.log("Player2 Wins");
-        }
-        if(result === -1) {
-            console.log("Tie");
-        }
+        console.log("Ending Game: ", this.gameId, "result: ", result);
         this.gameStatus = GameStatus.Finished;
+        // Add final state of board
+        this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
+        //Send full timeline
+        this.io.to(this.gameId).emit("GameEnd", {
+            winner: result,
+            fullTimeline: this.refactorTimeline(),
+        })
+    }
+
+    refactorTimeline() {
+        return this.game.timeline.map((row, rowIdx) =>{
+            return row.map((timeslice, colIdx) => {
+                let pastPlayer = [];
+                let pastEnemy = [];
+                let ninjaStars = [];
+                for(let i = 0; i < rowIdx; i++) {
+                    pastPlayer.push(this.game.timeline[i][colIdx].players[0].location);
+                    pastEnemy.push(this.game.timeline[i][colIdx].players[1].location);
+                    ninjaStars.push(...this.game.timeline[i][colIdx].ninjaStars)
+                }
+                return {
+                    timestep: colIdx,
+                    timeloop: rowIdx,
+                    player: timeslice.players[0].location,
+                    pastSelf: pastPlayer,
+                    enemy: timeslice.players[1].location,
+                    enemies: pastEnemy,
+                    ninjaStars: [...timeslice.ninjaStars, ...ninjaStars],
+                    vision: [],
+                }
+            })
+        })
     }
 }
 
