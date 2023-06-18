@@ -99,6 +99,14 @@ class Map {
                 })
             }
         }
+        // Add vision around corners
+        let diagonals = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+        diagonals.forEach((diagonal) => {
+            let tile = start.map((a, i) => a + diagonal[i]);
+            if(!this.isOutOfBounds(tile) && this.map[tile[0]][tile[1]].vision) {
+                visibleTileSet.add(JSON.stringify(tile));
+            }
+        })
         return visibleTileSet;
     }
 
