@@ -4,7 +4,10 @@
   "description": "Multiplayer web game with time shenanigans",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
+    "clean": "rimraf dist/",
+    "copy-files": "copyfiles -u 1 src/**/*.html src/**/*.txt src/public/img/* dist/",
+    "build": "npm run clean && npx tsc && npm run copy-files",
+    "start": "node dist/app.js",
     "test": "jest"
   },
   "repository": {
@@ -22,6 +25,12 @@
     "socket.io": "^4.6.2"
   },
   "devDependencies": {
-    "jest": "^29.5.0"
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^20.3.1",
+    "copyfiles": "^2.4.1",
+    "jest": "^29.5.0",
+    "rimraf": "^5.0.1",
+    "typescript": "^5.1.3"
   }
 }

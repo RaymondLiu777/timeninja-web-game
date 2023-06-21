@@ -1,10 +1,11 @@
 const express = require("express");
 const { createServer } = require("http");
-const { Server } = require("socket.io");
-const game = require('./server');
+import { Server, Socket } from 'socket.io';
+import { startServer, createConnection } from './server';
+var path = require('path');
 
 const app = express();
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const httpServer = createServer(app);
 const io = new Server(httpServer);
@@ -13,10 +14,10 @@ const PORT = process.env.PORT || 3000
 httpServer.listen(PORT);
 console.log(`Server listening on port ${PORT}`)
 
-game.startServer(io);
+startServer(io);
 
-io.on("connection", (socket) => {
+io.on("connection", (socket: Socket) => {
     // ...
     console.log("Connection from: " + socket.id);
-    game.createConnection(socket);
+    createConnection(socket);
 });

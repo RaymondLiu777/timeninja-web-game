@@ -16,7 +16,7 @@ document.getElementById("create-game-btn").addEventListener("click", (e) => {
 document.getElementById("bot-game-btn").addEventListener("click", (e) => {
     e.preventDefault();
     var gameId = document.getElementById('gameId').value;
-    console.log("JoinGame", gameId);
+    console.log("BotGame", gameId);
     socket.emit("CreateGame", {id: gameId, bot: true});
 })
 
