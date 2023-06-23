@@ -1,7 +1,14 @@
 
-class Map {
+interface MapItem {
+    name: string,
+    walkable: boolean,
+    vision: boolean,
+}
 
-    constructor(mapString) {
+export class GameMap {
+    map: MapItem[][];
+
+    constructor(mapString: string) {
         const lines = mapString.trim().split('\n');
         this.map = lines.map(line => line.trim().split(' ').map(Number).map((num) => {
             if(num === 0) {
@@ -11,14 +18,22 @@ class Map {
                     vision: false
                 }
             }
-            if(num === 1) {
+            else if(num === 1) {
                 return {
                     name: "Path",
                     walkable: true,
                     vision: true
                 }
             }
-            if(num === 2) {
+            else if(num === 2) {
+                return {
+                    name: "Block",
+                    walkable: false,
+                    vision: false
+                }
+            }
+            else {
+                console.log("Unable to read map: ", num);
                 return {
                     name: "Block",
                     walkable: false,
@@ -28,19 +43,19 @@ class Map {
         }));
     }
 
-    isOutOfBounds(coord) {
+    isOutOfBounds(coord: number[]) : boolean {
         return coord[0] < 0 || coord[0] >= this.map.length || coord[1] < 0 || coord[1] >= this.map[coord[0]].length
     }
 
-    isWalkable(coord) {
+    isWalkable(coord: number[]) : boolean {
         if(this.isOutOfBounds(coord)){
             return false;
         }
         return this.map[coord[0]][coord[1]].walkable;
     }
 
-    getVisionFrom(start) {
-        let visibleTileSet = new Set();
+    getVisionFrom(start: number[]): Set<string> {
+        let visibleTileSet = new Set<string>();
         let queue = [start];
         const offsets = [[-1, 0], [1, 0], [0, -1], [0, 1]];
         let i = 0;
@@ -110,7 +125,7 @@ class Map {
         return visibleTileSet;
     }
 
-    getVisionFromMultiple(locations) {
+    getVisionFromMultiple(locations: number[][]) {
         let totalVision = new Set();
         locations.forEach((location) => {
             totalVision = new Set([...this.getVisionFrom(location), ...totalVision]);
@@ -118,5 +133,3 @@ class Map {
         return totalVision;
     }
 }
-
-module.exports = Map;
