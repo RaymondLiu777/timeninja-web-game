@@ -107,7 +107,6 @@ export function createConnection(socket: Socket){
     })
 
     socket.on("GameInput", (args: string) => {
-        console.log(socket.id, args);
         let gameId = players.get(socket.id)?.game;
         if(gameId != undefined && ongoingGames.has(gameId)) {
             ongoingGames.get(gameId)?.playerInput(socket.id, args);
@@ -123,7 +122,6 @@ export function createConnection(socket: Socket){
     })
 
     socket.on("BotConnection", () => {
-        console.log("Bot connection recieved");
         botId = socket.id;
     })
 }

@@ -8,6 +8,7 @@
     "copy-files": "copyfiles -u 1 src/**/*.html src/**/*.txt src/public/img/* dist/",
     "build": "npm run clean && npx tsc && npm run copy-files",
     "start": "node dist/app.js",
+    "dev": "node --enable-source-maps dist/app.js",
     "test": "jest"
   },
   "repository": {

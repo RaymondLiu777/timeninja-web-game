@@ -72,15 +72,20 @@ export class Game {
     }
 
     initialGameState(): GameState {
-        return JSON.parse(JSON.stringify({
+        return {
             players: [{
-                location: [1, 5]
+                location: [1, 5],
+                ready: false,
+                intent: ""
+
             },
             {
-                location: [9, 5]
+                location: [9, 5],
+                ready: false,
+                intent: ""
             }],
             ninjaStars: [],
-        }));
+        };
     }
 
     startGame(): void {
@@ -104,6 +109,7 @@ export class Game {
             maxTimestep: MAX_TIME_STEP,
             maxTimeloop: MAX_TIME_LOOP,
         });
+        this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
         this.boardCastGameState();
     }
 
@@ -141,8 +147,6 @@ export class Game {
         if(this.gameStatus !== GameStatus.InProgress) {
             return;
         }
-        //Make a copy of game state
-        this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
         //Update time and deal with time loops
         this.game.timestep += 1;
         if(this.game.timestep == MAX_TIME_STEP) {
@@ -210,6 +214,9 @@ export class Game {
                 }
             });
         });
+        //Make a copy of game state
+        this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
+
         this.boardCastGameState();
         if(winner[0] && winner[1]) {
             this.endGame(-1);
@@ -292,8 +299,6 @@ export class Game {
         }
         console.log("Ending Game: ", this.gameId, "result: ", result);
         this.gameStatus = GameStatus.Finished;
-        // Add final state of board
-        this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
         //Send full timeline
         this.io.to(this.gameId).emit("GameEnd", {
             winner: result,
