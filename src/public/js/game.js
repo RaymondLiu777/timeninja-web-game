@@ -47,6 +47,7 @@ var mapName;
 var stageMap;
 var player;
 var maxTimestep; 
+var maxTimeloop; 
 let currentTimestep;
 let currentTimeloop;
 let tempTimestep;
@@ -66,6 +67,7 @@ image_list.forEach((img_name)=> {
 })
 
 socket.on("GameStart", (startInfo) => {
+    console.log(startInfo);
     mapName = startInfo.id;
     stageMap = startInfo.map;
     player = startInfo.player;

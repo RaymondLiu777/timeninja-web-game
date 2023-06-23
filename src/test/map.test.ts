@@ -1,4 +1,4 @@
-import { GameMap } from "./gameMap";
+import { GameMap } from "../server/gameMap";
 
 const eqSet = (xs: Set<any>, ys: Set<any>) =>
     xs.size === ys.size &&

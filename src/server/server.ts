@@ -16,7 +16,7 @@ var io: Server;
 var players = new Map<string, Player>();
 var ongoingGames = new Map<string, Game>();
 var gameQueue = new Map<string, string>();
-var bot:string = "";
+var botId:string|null = null;
 
 /**
  * Set Up Server Variables
@@ -63,9 +63,21 @@ export function createConnection(socket: Socket){
                 return;
             }
         }
-        gameQueue.set(gameId, socket.id);
         if(args.bot) {
-            //TODO bot games
+            if(botId != null) {
+                let player1 = players.get(socket.id)!;
+                let player2 = players.get(botId)!;
+                botId = null;
+                player1.game = gameId;
+                player2.game = gameId;
+                ongoingGames.set(gameId, new Game(io, gameId, player1, player2));
+            }
+            else{
+                console.log("No bot found");
+            }
+        }
+        else {
+            gameQueue.set(gameId, socket.id);
         }
     })
 
@@ -95,6 +107,7 @@ export function createConnection(socket: Socket){
     })
 
     socket.on("GameInput", (args: string) => {
+        console.log(socket.id, args);
         let gameId = players.get(socket.id)?.game;
         if(gameId != undefined && ongoingGames.has(gameId)) {
             ongoingGames.get(gameId)?.playerInput(socket.id, args);
@@ -107,5 +120,10 @@ export function createConnection(socket: Socket){
             ongoingGames.get(gameId)?.endGame(-1);
         }
         players.delete(socket.id);
+    })
+
+    socket.on("BotConnection", () => {
+        console.log("Bot connection recieved");
+        botId = socket.id;
     })
 }

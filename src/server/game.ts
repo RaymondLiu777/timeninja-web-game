@@ -68,73 +68,8 @@ export class Game {
             timeloop: 0,
             timeline: [[],[],[]],
         };
-        console.log("Created Game: ", gameId);
+        this.startGame();
     }
-
-    /**
-     * Initialize Game Object
-     */
-    // static createGame(io: Server, games: Games, gameId: string, bot:boolean) {
-    //     if(gameId in games) {
-    //         console.log("Game ", gameId, " already created");
-    //         return false;
-    //     }
-    //     games[gameId] = new Game(io, gameId, bot);
-    //     console.log("Created Game: ", gameId);
-    //     return true;
-    // }
-
-    /**
-     * Tries to add player to game if there is empty spot
-     */
-    /*
-    addPlayer(player: Player) {
-        if(player.game !== null) {
-            console.log("Player: ", player.id, " is already in a game");
-            return;
-        }
-        if(this.player1 === null) {
-            player.game = this.gameId;
-            this.player1 = player;
-            console.log("Add Player: ", player.id, " to Game: ", this.gameId);
-            if(this.botGame) {
-                this.startGame();
-            }
-        }
-        else if(this.player2 === null) {
-            player.game = this.gameId;
-            this.player2 = player;
-            console.log("Add Player: ", player.id, " to Game: ", this.gameId);
-            this.startGame();
-        }
-        else {
-            console.log("Game ", this.gameId, " is full");
-        }
-    }
-    */
-
-    /**
-     * Remove player from game if they are in it
-     * Terminates the game for all
-     */
-    /*
-    removePlayer(playerId: string): void {
-        if(this.player1.id === playerId || this.player2.id === playerId) {
-            if(this.player1 !== null) {
-                this.player1.game = null;
-            }
-            if(this.player2 !== null) {
-                this.player2.game = null;
-            }
-            this.player1 = null;
-            this.player2 = null;
-            this.game = null;
-        }
-        else {
-            console.log("Player: ", playerId, " tried to leave game: ", this.gameId);
-        }
-    }
-    */
 
     initialGameState(): GameState {
         return JSON.parse(JSON.stringify({
@@ -192,9 +127,6 @@ export class Game {
             console.log("Player: ", playerId, " attempted move in game: ", this.gameId);
             return;
         }
-        // if(this.botGame) {
-        //     this.AiMove();
-        // }
         if(this.game.gameState.players[0].ready == true && this.game.gameState.players[1].ready == true) {
             this.updateGame();
         }
@@ -290,14 +222,6 @@ export class Game {
         }
     }
 
-    /**
-     * Pick a move for the bot
-     */
-    // AiMove() {
-    //     this.game.gameState.players[1].intent = "Wait";
-    //     this.game.gameState.players[1].ready = true;
-    // }
-
     boardCastGameState() {
         let currentGameState = this.getCurrentGameState();
         let player1Location = currentGameState.players[0].location;
@@ -342,9 +266,8 @@ export class Game {
                 player2GameState.enemies.push(playerLocation)
             }
         })
-        // if(!this.botGame) {
-            this.player2.socket.emit("GameUpdate", player2GameState)
-        // }
+        this.player2.socket.emit("GameUpdate", player2GameState)
+
     }
 
     getCurrentGameState() {
@@ -363,6 +286,10 @@ export class Game {
      * result 0=player1 wins, 1=player2 wins, -1=tie
      */
     endGame(result: number) {
+        if(this.gameStatus === GameStatus.Finished) {
+            console.log("Game already ended");
+            return;
+        }
         console.log("Ending Game: ", this.gameId, "result: ", result);
         this.gameStatus = GameStatus.Finished;
         // Add final state of board
@@ -372,6 +299,7 @@ export class Game {
             winner: result,
             fullTimeline: this.refactorTimeline(),
         })
+        this.io.in(this.gameId).socketsLeave(this.gameId);
     }
 
     refactorTimeline() {
