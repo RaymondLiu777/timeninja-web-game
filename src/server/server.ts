@@ -38,16 +38,11 @@ export function createConnection(socket: Socket){
 
     socket.on("CreateGame", (args: createGameEvent) => {
         //Check if current in game
-        let player = players.get(socket.id);
-        if(player != null && player.game != null) {
-            let game = ongoingGames.get(player.game);
-            if(game != null && game.gameStatus === "Finished") {
-                ongoingGames.delete(player.game);
-            }
-            else {
-                return;
-            }
+        if(!readyToJoin(socket.id)){
+            console.log("Player unable to create game");
+            return;
         }
+        // Look for game
         let gameId = args.id;
         if(gameQueue.has(args.id)) {
             console.log("Game: ", args.id, " has already been created");
@@ -83,15 +78,9 @@ export function createConnection(socket: Socket){
 
     socket.on("JoinGame", (gameId: string) => {
         //Check if current in game
-        let player = players.get(socket.id);
-        if(player != null && player.game != null) {
-            let game = ongoingGames.get(player.game);
-            if(game != null && game.gameStatus === "Finished") {
-                ongoingGames.delete(player.game);
-            }
-            else {
-                return;
-            }
+        if(!readyToJoin(socket.id)){
+            console.log("Player unable to join game");
+            return;
         }
         if(gameQueue.has(gameId)) {
             let player1 = players.get(gameQueue.get(gameId)!)!;
@@ -117,6 +106,7 @@ export function createConnection(socket: Socket){
         let gameId = players.get(socket.id)?.game;
         if(gameId != null && ongoingGames.has(gameId)) {
             ongoingGames.get(gameId)?.endGame(-1);
+            ongoingGames.delete(gameId);
         }
         players.delete(socket.id);
     })
@@ -124,4 +114,27 @@ export function createConnection(socket: Socket){
     socket.on("BotConnection", () => {
         botId = socket.id;
     })
+}
+
+function readyToJoin(socketId:string) {
+    let player = players.get(socketId);
+    if(player == undefined) {
+        console.log("Player could not be found: ", socketId);
+        return false;
+    }
+    if(player.game != null) {
+        let game = ongoingGames.get(player.game);
+        if(game == undefined){
+            return true;
+        }
+        else if(game.gameStatus === "Finished") {
+            ongoingGames.delete(player.game);
+            console.log("Deleted game")
+            return true
+        }
+        else {
+            return false;
+        }
+    }
+    return true;
 }
