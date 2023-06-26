@@ -1,0 +1,25 @@
+.mobile-button {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #000000; 
+    border-radius: 4px;
+    margin: 1px;
+}
+
+#mobile {
+    margin: 3px;
+}
+
+.hidden {
+    display: none;
+}
+
+.row {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+}
+
+.col {
+    padding: 5px;
+} 

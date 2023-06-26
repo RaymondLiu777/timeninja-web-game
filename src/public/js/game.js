@@ -39,6 +39,14 @@ function processButton(code) {
     }
 }
 
+Array.from(document.getElementsByClassName("mobile-button")).forEach((button) => {
+    console.log(button);
+    button.addEventListener("click", (e) => {
+        e.preventDefault();
+        processButton(button.value);
+    })
+});
+
 var context = document.getElementById("game").getContext("2d");
 context.textAlign = "center";
 context.fillStyle = "white";
@@ -68,6 +76,8 @@ image_list.forEach((img_name)=> {
 
 socket.on("GameStart", (startInfo) => {
     console.log(startInfo);
+    document.getElementById("matchmaking").classList.add("hidden");
+    document.getElementById("gameinfo").classList.remove("hidden");
     mapName = startInfo.id;
     stageMap = startInfo.map;
     player = startInfo.player;
@@ -103,6 +113,8 @@ socket.on("GameUpdate", (gameState) => {
 
 socket.on("GameEnd", (gameInfo) => {
     console.log(gameInfo);
+    document.getElementById("gameinfo").classList.add("hidden");
+    document.getElementById("matchmaking").classList.remove("hidden");
     if(gameInfo.winner === -1) {
         gameText = "Tie Game";
     }
