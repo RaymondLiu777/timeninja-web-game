@@ -3,25 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/index.css">
     <title>Time Ninja Game</title>
 </head>
 <body>
-    <canvas id="game" width="352" height="352" ></canvas>
-    <div id="form2">
-        <label for="gameId">Game ID:</label>
-        <input type="text" id="gameId" name="gameId">
-        <br>
-        <button id = "create-game-btn" type="button">Create Game</button>
-        <button id = "join-game-btn" type="button">Join Game</button>
-        <button id = "bot-game-btn" type="button">Bot Game</button>
+    <div class="row">
+        <div>
+            <canvas id="game" width="352" height="352" ></canvas>
+            <div id="matchmaking">
+                <label for="gameId">Game ID:</label>
+                <input type="text" id="gameId" name="gameId">
+                <br>
+                <button id = "create-game-btn" type="button">Create Game</button>
+                <button id = "join-game-btn" type="button">Join Game</button>
+                <button id = "bot-game-btn" type="button">Bot Game</button>
+            </div>
+
+            <div id="gameinfo" class="hidden">
+                <span>Your next move: </span>
+                <span id="input"></span>
+                <br/>
+                <span>Turns until rewind: </span>
+                <span id="timeleft"></span>
+            </div>
+            <button id="mobile">Mobile Friendly Buttons</button>
+        </div>
     </div>
     <div>
-        <span>Your next move: </span>
-        <span id="input"></span>
-    </div>
-    <div>
-        <span>Turns until rewind: </span>
-        <span id="timeleft"></span>
+        <div id="mobile-controls" class="hidden">
+            <div class="row">
+                <div class="col">
+                    <span>Movement</span><br/>
+                    <div class="row">
+                        <button id="up-arrow" class="mobile-button" value="ArrowUp">&#8593;</button>
+                    </div>
+                    <div class="row">
+                        <button id="left-arrow" class="mobile-button" value="ArrowLeft">	&#8592;</button>
+                        <button id="down-arrow" class="mobile-button" value="ArrowDown">&#8595;</button>
+                        <button id="right-arrow" class="mobile-button" value="ArrowRight">&#8594;</button>
+                    </div>
+                </div> 
+                <div class="col">
+                    <span>Attack</span><br/>
+                    <div class="row">
+                        <button id="up-arrow-star" class="mobile-button" value="KeyW">&#8593;</button>
+                    </div>
+                    <div class="row">
+                        <button id="left-arrow-star" class="mobile-button" value="KeyA">	&#8592;</button>
+                        <button id="down-arrow-star" class="mobile-button" value="KeyS">&#8595;</button>
+                        <button id="right-arrow-star" class="mobile-button" value="KeyD">&#8594;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <span>Time Scrubber</span><br/>
+                    <div class="row">
+                        <button id="time-forward" class="mobile-button" value="KeyQ">&#8592;</button>
+                        <button id="time-backward" class="mobile-button" value="KeyE">&#8594;</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <span>Wait</span><br/>
+                    <div class="row">
+                        <button id="wait" class="mobile-button" value="Space">...</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
