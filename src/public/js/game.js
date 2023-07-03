@@ -40,7 +40,6 @@ function processButton(code) {
 }
 
 Array.from(document.getElementsByClassName("mobile-button")).forEach((button) => {
-    console.log(button);
     button.addEventListener("click", (e) => {
         e.preventDefault();
         processButton(button.value);
