@@ -12,17 +12,22 @@ export class Direction {
     }
 
     static convertToDirection(direction: string): Direction {
-        switch(direction){
-            case "Up":
+        switch(direction.toLowerCase()){
+            case "up":
                 return new Direction(Direction.Up);
-            case "Down":
+            case "down":
                 return new Direction(Direction.Down);
-            case "Left":
+            case "left":
                 return new Direction(Direction.Left);
-            case "Right":
+            case "right":
                 return new Direction(Direction.Right);
         }
         throw new Error("Undefined Direction");
+    }
+
+    static isDirection(direction: string): boolean {
+        let lowerDir = direction.toLowerCase();
+        return lowerDir === "up" || lowerDir === "down" || lowerDir === "right" || lowerDir === "left";
     }
 
     isEqual(direction: Direction): Boolean {

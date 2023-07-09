@@ -3,10 +3,12 @@ import { GameMap } from "./gameMap";
 import path from 'path';
 import { Server } from 'socket.io';
 import { Player } from './server';
-import { Entity } from './entities/entity';
-import { NinjaStar, NinjaStarState } from './entities/ninjaStar';
-import { Ninja } from './entities/ninja';
+import { Entity, EntityState } from './entities/entity';
+import { Ninja, NinjaState } from './entities/ninja';
 import { GameStatus } from './gameStatus';
+import { PresentNinja } from './entities/presentNinja';
+import { TimeLine, TimelineEvent } from './timeline';
+import { PastNinja } from './entities/pastNinja';
 
 const mapFilepath = path.join(__dirname, 'teststage.txt');
 const fileContent = fs.readFileSync(mapFilepath, 'utf-8');
@@ -21,18 +23,11 @@ interface PlayerState {
     intent: string;
 }
 
-interface GameState {
-    players: PlayerState[];
-    ninjaStars: NinjaStarState[];
-}
-
 export interface GameData {
     gameMap: GameMap;
     entityList: Entity[];
-    ninjas: Ninja[];
-    timestep: number;
-    timeloop: number;
-    timeline: GameState[][];
+    ninjas: PresentNinja[];
+    timeline: TimeLine;
     gameStatus: GameStatus;
 }
 
@@ -50,9 +45,7 @@ export class Game {
             gameMap:testMap,
             entityList: [],
             ninjas: [],
-            timestep: 0,
-            timeloop: 0,
-            timeline: [[],[],[]],
+            timeline: new TimeLine(MAX_TIME_STEP, MAX_TIME_LOOP),
             gameStatus: GameStatus.Unstarted
         };
         this.initializeGameState();
@@ -60,10 +53,17 @@ export class Game {
     }
 
     initializeGameState() {
-        this.game.entityList = [];
+        // Create past ninjas
+        let newEntityList: Entity[] = [];
+        this.game.entityList.filter((entity) => {
+            return entity.entityType === "PastNinja" || entity.entityType === "PresentNinja";
+        }).forEach((ninja) => {
+            newEntityList.push(new PastNinja(this.game, this.game.timeline.getEntityTimeline(ninja.id) as NinjaState[]))
+        })
+        this.game.entityList = newEntityList;
         this.game.ninjas = [];
-        new Ninja(this.game, [1, 5], this.players[0].id );
-        new Ninja(this.game, [9, 5], this.players[1].id );
+        new PresentNinja(this.game, [1, 5], this.players[0].id );
+        new PresentNinja(this.game, [9, 5], this.players[1].id );
     }
 
     startGame(): void {
@@ -82,7 +82,7 @@ export class Game {
                 maxTimeloop: MAX_TIME_LOOP,
             });
         }
-        // this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
+        this.addStateToTimeLine();
         this.boardCastGameState();
     }
 
@@ -113,14 +113,12 @@ export class Game {
         if(this.game.gameStatus !== GameStatus.InProgress) {
             return;
         }
-        //Update time and deal with time loops
-        this.game.timestep += 1;
-        if(this.game.timestep == MAX_TIME_STEP) {
-            this.game.timestep = 0;
-            this.game.timeloop += 1;
+        // Take next timeline step + deal with any loops
+        let event = this.game.timeline.advanceTimestep();
+        if(event === TimelineEvent.RestartTimeloop) {
             this.initializeGameState();
         }
-        if(this.game.timeloop === MAX_TIME_LOOP) {
+        if(event === TimelineEvent.NoMoreTimeloops) {
             this.game.gameStatus = GameStatus.Tie;
             this.endGame();
             return;
@@ -141,44 +139,40 @@ export class Game {
         this.game.entityList = this.game.entityList.filter((entity) => {
             return !(entity.remove === true);
         })
-       
-        // let currentGameState = this.getCurrentGameState();
-        // //Check for collision with player
-        // let winner = [false, false]
-        // currentGameState.ninjaStars.forEach((ninjaStar: NinjaStarState) => {
-        //     [currentGameState.players[0].location, ...currentGameState.pastPlayers[0]].forEach((player) => {
-        //         if(ninjaStar.location[0] === player[0] && ninjaStar.location[1] === player[1]) {
-        //             winner[1] = true;
-        //         }
-        //     });
-        //     [currentGameState.players[1].location, ...currentGameState.pastPlayers[1]].forEach((player) => {
-        //         if(ninjaStar.location[0] === player[0] && ninjaStar.location[1] === player[1]) {
-        //             winner[0] = true;
-        //         }
-        //     });
-        // });
 
-        //Make a copy of game state
-        // this.game.timeline[this.game.timeloop].push(JSON.parse(JSON.stringify(this.game.gameState)));
+        this.checkForGameOver();
 
         this.boardCastGameState();
+
+        this.addStateToTimeLine();
+
         if(GameStatus.isDone(this.game.gameStatus)) {
             this.endGame();
         }
     }
 
+    addStateToTimeLine() {
+        this.game.timeline.storeState(this.game.entityList);
+    }
+
     boardCastGameState() {
         for(let i = 0; i < 2; i++) {
+            let player = this.players[i];
             let playerLocation = this.game.ninjas[i].location;
-            let otherPlayers = this.game.ninjas.filter((_ninja, index) => {
-                return index != i;
-            })
-            let visionTiles = this.game.gameMap.getVisionFromMultiple([playerLocation/*, ...pastLocations1*/]);
+            let pastLocations = this.game.entityList.filter((entity) => {
+                    return entity.entityType === "PastNinja" && (entity as Ninja).controller === player.id;
+                }).map((ninja)=>{
+                    return ninja.location;
+                });
+            let otherPlayers = this.game.entityList.filter((entity) => {
+                return (entity.entityType === "PastNinja" || entity.entityType === "PresentNinja") && (entity as Ninja).controller != player.id;
+            }) as Ninja[];
+            let visionTiles = this.game.gameMap.getVisionFromMultiple([playerLocation, ...pastLocations]);
             let playerGameState = {
-                timestep: this.game.timestep,
-                timeloop: this.game.timeloop,
+                timestep: this.game.timeline.currentTimestep,
+                timeloop: this.game.timeline.currentTimeloop,
                 player: playerLocation,
-                pastSelf: [],
+                pastSelf: pastLocations,
                 enemies: otherPlayers.filter((ninja: Ninja)=>{return visionTiles.has(JSON.stringify(ninja.location))})
                     .map((ninja: Ninja) => {return ninja.location}),
                 ninjaStars: this.game.entityList.filter((entity: Entity) => {
@@ -188,26 +182,36 @@ export class Game {
                 }),
                 vision: [...visionTiles],
             };
-            console.log(playerGameState);
-            this.players[i].socket.emit("GameUpdate", playerGameState)
+            player.socket.emit("GameUpdate", playerGameState)
         }
     }
 
-    // getCurrentGameState() {
-    //     let initialState = JSON.parse(JSON.stringify(this.game.gameState));
-    //     initialState.pastPlayers= [[], []];
-    //     for(let i = 0; i < this.game.timeloop; i++) {
-    //         initialState.pastPlayers[0].push(this.game.timeline[i][this.game.timestep].players[0].location);
-    //         initialState.pastPlayers[1].push(this.game.timeline[i][this.game.timestep].players[1].location);
-    //         initialState.ninjaStars.push(...this.game.timeline[i][this.game.timestep].ninjaStars)
-    //     }
-    //     return initialState;
-    // }
+    checkForGameOver() {
+        let dead = [false, false];
+        this.game.entityList.filter((entity) => {
+            return entity.entityType === "PresentNinja" || entity.entityType === "PastNinja";
+        }).forEach((entity)=> {
+            let ninja = entity as Ninja;
+            if(ninja.dead) {
+                this.players.forEach((player, idx) => {
+                    if(ninja.controller === player.id) {
+                        dead[idx] = true;
+                    }
+                })
+                
+            }
+        })
+        if(dead[0] && dead[1]) {
+            this.game.gameStatus = GameStatus.Tie;
+        }
+        else if(dead[0]) {
+            this.game.gameStatus = GameStatus.Player2Win;
+        }
+        else if(dead[1]) {
+            this.game.gameStatus = GameStatus.Player1Win;
+        }
+    }
 
-    /**
-     * End Game
-     * result 0=player1 wins, 1=player2 wins, -1=tie
-     */
     endGame() {
         console.log("Ending Game: ", this.gameId, "result: ", this.game.gameStatus);
         //Send full timeline

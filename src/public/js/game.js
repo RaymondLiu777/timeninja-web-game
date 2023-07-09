@@ -114,17 +114,22 @@ socket.on("GameEnd", (gameInfo) => {
     console.log(gameInfo);
     document.getElementById("gameinfo").classList.add("hidden");
     document.getElementById("matchmaking").classList.remove("hidden");
-    if(gameInfo.winner === -1) {
+    if(gameInfo.winner === "Tie") {
         gameText = "Tie Game";
     }
-    else {
-        if(gameInfo.winner === player) {
+    else if(gameInfo.winner === "Disconnect") {
+        gameText = "Disconnect";
+    }
+    else  {
+        let playerWon = (gameInfo.winner === "Player1Win" && player === 0) || (gameInfo.winner === "Player2Win" && player === 1);
+        if(playerWon) {
             gameText = "Winner";
         }
         else {
             gameText = "Loser";
         }
-    }
+    }   
+    
     fullTimeline = gameInfo.fullTimeline;
     lastMove = currentTimeloop * maxTimestep + currentTimestep;
     tempTimestep = lastMove;
@@ -193,16 +198,16 @@ function drawBoard(gameState, hideVision) {
     // Draw NinjaStars
     gameState.ninjaStars.forEach((ninjaStar) => {
         let image = "";
-        if(ninjaStar.direction[0] === -1 && ninjaStar.direction[1] === 0) {
+        if(ninjaStar.direction.offset[0] === -1 && ninjaStar.direction.offset[1] === 0) {
             image = "ninjastar-up";
         }
-        if(ninjaStar.direction[0] === 1 && ninjaStar.direction[1] === 0) {
+        if(ninjaStar.direction.offset[0] === 1 && ninjaStar.direction.offset[1] === 0) {
             image = "ninjastar-down";
         }
-        if(ninjaStar.direction[0] === 0 && ninjaStar.direction[1] === -1) {
+        if(ninjaStar.direction.offset[0] === 0 && ninjaStar.direction.offset[1] === -1) {
             image = "ninjastar-left";
         }
-        if(ninjaStar.direction[0] === 0 && ninjaStar.direction[1] === 1) {
+        if(ninjaStar.direction.offset[0] === 0 && ninjaStar.direction.offset[1] === 1) {
             image = "ninjastar-right";
         }
         context.drawImage(images[image], ninjaStar.location[1] * 32, ninjaStar.location[0] * 32);

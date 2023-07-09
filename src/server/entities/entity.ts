@@ -21,3 +21,12 @@ export abstract class Entity {
         Entity.idCount += 1;
     }
 }
+
+export abstract class EntityState {
+    id: number;
+    entityType: string;
+    constructor(id: number, entityType: string) {
+        this.id = id;
+        this.entityType = entityType;
+    }
+}

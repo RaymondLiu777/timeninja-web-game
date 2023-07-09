@@ -1,11 +1,15 @@
 import { GameData } from "../game";
-import { Entity } from "./entity";
+import { Entity, EntityState } from "./entity";
 import { Direction } from "../directions";
 
-export interface NinjaStarState {
-    id: number;
+export class NinjaStarState extends EntityState{
     location: number[];
     direction: number[];
+    constructor(ninjaStar: NinjaStar) {
+        super(ninjaStar.id, ninjaStar.entityType);
+        this.location = JSON.parse(JSON.stringify(ninjaStar.location));
+        this.direction = JSON.parse(JSON.stringify(ninjaStar.direction));
+    }
 }
 
 export class NinjaStar extends Entity {
@@ -51,10 +55,6 @@ export class NinjaStar extends Entity {
     }
 
     getState(): NinjaStarState {
-        return JSON.parse(JSON.stringify({
-            id: this.id,
-            location: this.location,
-            direction: this.direction.offset,
-        }))
+        return new NinjaStarState(this);
     }
 }
