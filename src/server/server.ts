@@ -1,5 +1,6 @@
 import { Game } from "./game";
 import { Socket, Server } from 'socket.io';
+import { GameStatus } from "./gameStatus";
 
 interface createGameEvent {
     id:string;
@@ -49,7 +50,7 @@ export function createConnection(socket: Socket){
             return;
         }
         if(ongoingGames.has(args.id)) {
-            if(ongoingGames.get(args.id)?.gameStatus == "Finished") {
+            if(ongoingGames.get(args.id)?.game.gameStatus ) {
                 // Game already ended
                 ongoingGames.delete(args.id);
             }
@@ -105,7 +106,10 @@ export function createConnection(socket: Socket){
     socket.on("disconnect", () => {
         let gameId = players.get(socket.id)?.game;
         if(gameId != null && ongoingGames.has(gameId)) {
-            ongoingGames.get(gameId)?.endGame(-1);
+            if(!GameStatus.isDone(ongoingGames.get(gameId)!.game.gameStatus)){
+                ongoingGames.get(gameId)!.game.gameStatus = GameStatus.Disconnect;
+                ongoingGames.get(gameId)!.endGame();
+            }
             ongoingGames.delete(gameId);
         }
         players.delete(socket.id);
@@ -127,7 +131,7 @@ function readyToJoin(socketId:string) {
         if(game == undefined){
             return true;
         }
-        else if(game.gameStatus === "Finished") {
+        else if(GameStatus.isDone(game.game.gameStatus)) {
             ongoingGames.delete(player.game);
             console.log("Deleted game")
             return true
