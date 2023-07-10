@@ -1,4 +1,6 @@
 import { Entity, EntityState } from "./entities/entity";
+import { Ninja, NinjaState } from "./entities/ninja";
+import { NinjaStarState } from "./entities/ninjaStar";
 
 interface GameState {
     states: EntityState[];
@@ -70,6 +72,46 @@ export class TimeLine {
             })
         })
         return timeline;
+    }
+
+    refactorTimeline(playerId: string) {
+        return this.history.map((row, rowIdx) =>{
+            return row.map((timeslice, colIdx) => {
+                let player = timeslice.states.filter((entityState) => {
+                    return (entityState.entityType === "PresentNinja") && (entityState as NinjaState).controller === playerId;
+                }).map((entityState) => {
+                    return (entityState as NinjaState).location;
+                });
+                let pastPlayer = timeslice.states.filter((entityState) => {
+                    return (entityState.entityType === "PastNinja") && (entityState as NinjaState).controller === playerId;
+                }).map((entityState) => {
+                    return (entityState as NinjaState).location;
+                });
+                let enemy = timeslice.states.filter((entityState) => {
+                    return (entityState.entityType === "PresentNinja") && (entityState as NinjaState).controller !== playerId;
+                }).map((entityState) => {
+                    return (entityState as NinjaState).location;
+                });
+                let pastEnemy = timeslice.states.filter((entityState) => {
+                    return (entityState.entityType === "PastNinja") && (entityState as NinjaState).controller !== playerId;
+                }).map((entityState) => {
+                    return (entityState as NinjaState).location;
+                });
+                let ninjaStars = timeslice.states.filter((entityState) => {
+                    return (entityState.entityType === "NinjaStar");
+                });
+                return {
+                    timestep: colIdx,
+                    timeloop: rowIdx,
+                    player: player[0],
+                    pastSelf: pastPlayer,
+                    enemy: enemy[0],
+                    enemies: pastEnemy,
+                    ninjaStars: ninjaStars,
+                    vision: [],
+                }
+            })
+        })
     }
 }
 

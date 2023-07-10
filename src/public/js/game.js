@@ -139,7 +139,6 @@ socket.on("GameEnd", (gameInfo) => {
 })
 
 function scrubTime(offset) {
-    console.log(offset);
     if(!gameOver) {
         // Unable to scumb time
         if(currentTimeloop === 0) {

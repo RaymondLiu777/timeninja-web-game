@@ -215,35 +215,13 @@ export class Game {
     endGame() {
         console.log("Ending Game: ", this.gameId, "result: ", this.game.gameStatus);
         //Send full timeline
-        this.io.to(this.gameId).emit("GameEnd", {
-            winner: this.game.gameStatus,
-            // fullTimeline: this.refactorTimeline(),
+        this.players.forEach((player) => {
+            player.socket.emit("GameEnd", {
+                winner: this.game.gameStatus,
+                fullTimeline: this.game.timeline.refactorTimeline(player.id),
+            })
         })
+        
         this.io.in(this.gameId).socketsLeave(this.gameId);
     }
-
-    // refactorTimeline() {
-    //     return this.game.timeline.map((row, rowIdx) =>{
-    //         return row.map((timeslice, colIdx) => {
-    //             let pastPlayer = [];
-    //             let pastEnemy = [];
-    //             let ninjaStars = [];
-    //             for(let i = 0; i < rowIdx; i++) {
-    //                 pastPlayer.push(this.game.timeline[i][colIdx].players[0].location);
-    //                 pastEnemy.push(this.game.timeline[i][colIdx].players[1].location);
-    //                 ninjaStars.push(...this.game.timeline[i][colIdx].ninjaStars)
-    //             }
-    //             return {
-    //                 timestep: colIdx,
-    //                 timeloop: rowIdx,
-    //                 player: timeslice.players[0].location,
-    //                 pastSelf: pastPlayer,
-    //                 enemy: timeslice.players[1].location,
-    //                 enemies: pastEnemy,
-    //                 ninjaStars: [...timeslice.ninjaStars, ...ninjaStars],
-    //                 vision: [],
-    //             }
-    //         })
-    //     })
-    // }
 }

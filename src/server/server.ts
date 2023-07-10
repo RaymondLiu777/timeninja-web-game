@@ -106,8 +106,10 @@ export function createConnection(socket: Socket){
     socket.on("disconnect", () => {
         let gameId = players.get(socket.id)?.game;
         if(gameId != null && ongoingGames.has(gameId)) {
-            ongoingGames.get(gameId)!.game.gameStatus = GameStatus.Disconnect;
-            ongoingGames.get(gameId)!.endGame();
+            if(!GameStatus.isDone(ongoingGames.get(gameId)!.game.gameStatus)){
+                ongoingGames.get(gameId)!.game.gameStatus = GameStatus.Disconnect;
+                ongoingGames.get(gameId)!.endGame();
+            }
             ongoingGames.delete(gameId);
         }
         players.delete(socket.id);
